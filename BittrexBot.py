@@ -1,0 +1,227 @@
+import json as O000O00O00O0O00OO #line:8
+import requests as OOOOO000OOO0000O0 #line:9
+from time import strftime as OOOO0OOOO0OO00O00 ,gmtime as OOO0OO000000O0000 #line:10
+import time as OO0OO0OO0O00O000O #line:11
+import hmac as O00OO0OOOO0O00OO0 #line:12
+import hashlib as O0O0OOOO00O0O00O0 #line:13
+import pdb as O0OO000OO00OO000O #line:14
+import platform as OO0OO00000OOOO0OO #line:15
+import utils as O00O0O0O0OO0O0O00 #line:16
+import colorama as OO00O0O0000O0O0O0 #line:17
+try :#line:18
+    from urllib import urlencode as O0OO00OOO000OO0O0 #line:19
+    from urlparse import urljoin as OO0OO0OO0O000OO0O #line:20
+except ImportError :#line:21
+    from urllib .parse import urlencode as O0OO00OOO000OO0O0 #line:22
+    from urllib .parse import urljoin as OO0OO0OO0O000OO0O #line:23
+import configparser as OO000OOOO00OO0O00 #line:25
+import sys as O0OO00O0O0O000OO0 #line:26
+config =OO000OOOO00OO0O00 .ConfigParser ()#line:27
+config .readfp (open ('config.txt'))#line:28
+key =config .get ('Bittrex','Key')#line:29
+secret =config .get ('Bittrex','Secret')#line:30
+BuyPercent =config .get ('PriceLip','BuyPercent')#line:31
+SellPercent =config .get ('PriceLip','SellPercent')#line:32
+BuyPercent ,SellPercent =O00O0O0O0OO0O0O00 .percentageFix (BuyPercent ,SellPercent )#line:33
+nonce =str (int (OO0OO0OO0O00O000O .time ()*1000 ))#line:34
+def getTicker (O0O00OOOO0000O000 ):#line:36
+    O0000OO000OOOO00O ='https://bittrex.com/api/v1.1/public/getticker?market='+'btc-'+O0O00OOOO0000O000 +'&apikey='+key +'&nonce='+nonce #line:37
+    OOO00OO0OO0O0OO0O =OOOOO000OOO0000O0 .get (O0000OO000OOOO00O ,headers ={'apisign':O00OO0OOOO0O00OO0 .new (secret .encode (),O0000OO000OOOO00O .encode (),O0O0OOOO00O0O00O0 .sha512 ).hexdigest ()})#line:38
+    O0OOOOOOO00OO00O0 =O000O00O00O0O00OO .loads (OOO00OO0OO0O0OO0O .text )#line:39
+    O0O0O000OO000000O =O0OOOOOOO00OO00O0 ['result']#line:40
+    return O0O0O000OO000000O ['Last']#line:41
+def getTickerSell (OOOO0O0OOO00OO000 ):#line:44
+    OO0O000OO0O00O0OO ='https://bittrex.com/api/v1.1/public/getticker?market='+'btc-'+OOOO0O0OOO00OO000 +'&apikey='+key +'&nonce='+nonce #line:45
+    O0O00O0O00O00O0O0 =OOOOO000OOO0000O0 .get (OO0O000OO0O00O0OO ,headers ={'apisign':O00OO0OOOO0O00OO0 .new (secret .encode (),OO0O000OO0O00O0OO .encode (),O0O0OOOO00O0O00O0 .sha512 ).hexdigest ()})#line:46
+    OOO00O000O0000O00 =O000O00O00O0O00OO .loads (O0O00O0O00O00O0O0 .text )#line:47
+    OOO0OO0OOOOO000O0 =OOO00O000O0000O00 ['result']#line:48
+    return OOO0OO0OOOOO000O0 ['Bid']#line:49
+def getBalance (O0O0OOO0O0O0OOO00 ):#line:52
+    OOO0000OO0O0O000O ='https://bittrex.com/api/v1.1/account/getbalance?currency='+O0O0OOO0O0O0OOO00 +'&apikey='+key +'&nonce='+nonce #line:53
+    O0OOOOO0OOO000OO0 =OOOOO000OOO0000O0 .get (OOO0000OO0O0O000O ,headers ={'apisign':O00OO0OOOO0O00OO0 .new (secret .encode (),OOO0000OO0O0O000O .encode (),O0O0OOOO00O0O00O0 .sha512 ).hexdigest ()})#line:54
+    OO00O0O0O0O0OOOOO =O000O00O00O0O00OO .loads (O0OOOOO0OOO000OO0 .text )#line:55
+    O0OO0O0OO00O00OO0 =OO00O0O0O0O0OOOOO ['result']#line:56
+    return O0OO0O0OO00O00OO0 ['Available']#line:57
+def getOrder (O0O0OOOOO0O0O0000 ):#line:60
+    O0OO0OOOOOO0OOO0O ='https://bittrex.com/api/v1.1/account/getorder?uuid='+O0O0OOOOO0O0O0000 +'&apikey='+key +'&nonce='+nonce #line:61
+    OOOOOOO0OO0O00OOO =OOOOO000OOO0000O0 .get (O0OO0OOOOOO0OOO0O ,headers ={'apisign':O00OO0OOOO0O00OO0 .new (secret .encode (),O0OO0OOOOOO0OOO0O .encode (),O0O0OOOO00O0O00O0 .sha512 ).hexdigest ()})#line:62
+    OO0O0O0OO0OO00OO0 =O000O00O00O0O00OO .loads (OOOOOOO0OO0O00OOO .text )#line:63
+    OO0O00O000OO000OO =OO0O0O0OO0OO00OO0 ['result']#line:64
+    return OO0O00O000OO000OO #line:65
+def buyOrder (OO00000000OO0O00O ,O00OOO0O0O0O0O0O0 ):#line:68
+    OOO0000O0OOOO0O0O =getTicker (OO00000000OO0O00O )#line:69
+    OO0O000OOO0000O0O =OOO0000O0OOOO0O0O *(1 +float (BuyPercent ))#line:70
+    OOOO0O0000OO00O0O ='https://bittrex.com/api/v1.1/market/buylimit?market='+'btc-'+OO00000000OO0O00O +'&quantity='+str (O00OOO0O0O0O0O0O0 )+'&rate='+str (OO0O000OOO0000O0O )+'&apikey='+key +'&nonce='+nonce #line:71
+    O0O000O000O0O00OO =OOOOO000OOO0000O0 .get (OOOO0O0000OO00O0O ,headers ={'apisign':O00OO0OOOO0O00OO0 .new (secret .encode (),OOOO0O0000OO00O0O .encode (),O0O0OOOO00O0O00O0 .sha512 ).hexdigest ()})#line:72
+    O0O000O0OO0O000O0 =O000O00O00O0O00OO .loads (O0O000O000O0O00OO .text )#line:73
+    if O0O000O0OO0O000O0 ['success']==False :#line:74
+        print ('Error!')#line:75
+        O0OO00O0O0O000OO0 .exit ('Message: '+O0O000O0OO0O000O0 ['message'])#line:76
+    else :#line:77
+        OOOOOOO00O00OO000 =O0O000O0OO0O000O0 ['result']['uuid']#line:78
+        OOOOOO00O00OOOO00 =[OOOOOOO00O00OO000 ,OO0O000OOO0000O0O ]#line:79
+        return OOOOOO00O00OOOO00 #line:80
+def sellOrder (OOO000OO00OO0OOOO ,O0O0000OOOO000O00 ):#line:83
+    OO0OO0O00000OOOOO ='btc-'+OOO000OO00OO0OOOO #line:84
+    O0OO00O0O0OO0O0OO =getBalance (OOO000OO00OO0OOOO )#line:85
+    OO000O000O00O00O0 ='https://bittrex.com/api/v1.1/market/selllimit?market='+OO0OO0O00000OOOOO +'&quantity='+str (O0OO00O0O0OO0O0OO )+'&rate='+str (O0O0000OOOO000O00 )+'&apikey='+key +'&nonce='+nonce #line:86
+    OOOOO0O0OOO0OO00O =OOOOO000OOO0000O0 .get (OO000O000O00O00O0 ,headers ={'apisign':O00OO0OOOO0O00OO0 .new (secret .encode (),OO000O000O00O00O0 .encode (),O0O0OOOO00O0O00O0 .sha512 ).hexdigest ()})#line:87
+    OOOOOOO0OOOO0OOOO =O000O00O00O0O00OO .loads (OOOOO0O0OOO0OO00O .text )#line:88
+    OOO0O0000OOOO0O0O =OOOOOOO0OOOO0OOOO ['result']['uuid']#line:89
+    return OOO0O0000OOOO0O0O #line:90
+def marketHistory (OO00O00OO000OO000 ):#line:93
+    OOO0OOOOO00OOOOO0 ='btc-'+OO00O00OO000OO000 #line:94
+    O000000O0O00O0O0O ='https://bittrex.com/api/v1.1/public/getmarkethistory?Market='+OOO0OOOOO00OOOOO0 +'&apikey='+key +'&nonce='+nonce #line:95
+    OO0OO0OO0OOOOO000 =OOOOO000OOO0000O0 .get (O000000O0O00O0O0O ,headers ={'apisign':O00OO0OOOO0O00OO0 .new (secret .encode (),O000000O0O00O0O0O .encode (),O0O0OOOO00O0O00O0 .sha512 ).hexdigest ()})#line:96
+    OO0O000OOO00OOO00 =O000O00O00O0O00OO .loads (OO0OO0OO0OOOOO000 .text )#line:97
+    OOOO0OOO0O00OO0O0 =OO0O000OOO00OOO00 ['result']#line:98
+    with open ('mh.json','w')as O000000O00OOO000O :#line:99
+        O000O00O00O0O00OO .dump (OO0O000OOO00OOO00 ,O000000O00OOO000O )#line:100
+    O0000OO00OOOOOO00 =[]#line:101
+    OO0O0O0O0OOOOOOOO =[]#line:102
+    for O000OOO00000OO0O0 in OOOO0OOO0O00OO0O0 :#line:103
+        O0000OO00OOOOOO00 .append (O000OOO00000OO0O0 ['Price'])#line:104
+        OO0O0O0O0OOOOOOOO .append (O000OOO00000OO0O0 ['TimeStamp'])#line:105
+    O000OO0O000O0OO0O =OO0O0O0O0OOOOOOOO [0 ]#line:107
+    OO000O000OOO0OOO0 =O000OO0O000O0OO0O [14 :16 ]#line:108
+    O00OO0OO0O0O00000 =0 #line:109
+    O0OO0OOO000OO0O0O =0 #line:110
+    for O000OOO00000OO0O0 in OO0O0O0O0OOOOOOOO :#line:111
+        if float (O000OOO00000OO0O0 [14 :16 ])==float (OO000O000OOO0OOO0 )-1 :#line:112
+            O00OO0OO0O0O00000 =OO0O0O0O0OOOOOOOO .index (O000OOO00000OO0O0 )#line:113
+            O0OO0OOO000OO0O0O =O0000OO00OOOOOO00 [O00OO0OO0O0O00000 ]#line:114
+            break #line:115
+    OO00OOOOO000OO0OO =0 #line:117
+    OO0O00OOOO0OO00OO =0 #line:118
+    for O000OOO00000OO0O0 in OO0O0O0O0OOOOOOOO :#line:119
+        if float (O000OOO00000OO0O0 [14 :16 ])==float (OO000O000OOO0OOO0 )-2 :#line:120
+            OO00OOOOO000OO0OO =OO0O0O0O0OOOOOOOO .index (O000OOO00000OO0O0 )#line:121
+            OO0O00OOOO0OO00OO =O0000OO00OOOOOO00 [OO00OOOOO000OO0OO ]#line:122
+            break #line:123
+    return (O0OO0OOO000OO0O0O ,OO0O00OOOO0OO00OO )#line:125
+def USD_BTC_Price ():#line:128
+    OOOOOOO00OO000000 ='https://bittrex.com/api/v1.1/public/getticker?market='+'USDT-BTC'+'&apikey='+key +'&nonce='+nonce #line:129
+    O00O0000OOO0O000O =OOOOO000OOO0000O0 .get (OOOOOOO00OO000000 ,headers ={'apisign':O00OO0OOOO0O00OO0 .new (secret .encode (),OOOOOOO00OO000000 .encode (),O0O0OOOO00O0O00O0 .sha512 ).hexdigest ()})#line:130
+    OOOO0000OOOOOOO0O =O000O00O00O0O00OO .loads (O00O0000OOO0O000O .text )#line:131
+    OO0O00OOOOO00O000 =OOOO0000OOOOOOO0O ['result']#line:132
+    return OO0O00OOOOO00O000 ['Ask']#line:133
+def Trade (OOOO00OO0O0O0O0O0 ,OO0OO0O0O00OO00O0 ,OO00O0000OO00O0OO ,O0000O00000O00OO0 ):#line:136
+    OO0O0000O0000000O =OO00O0O0000O0O0O0 .Fore .YELLOW +OO00O0O0000O0O0O0 .Back .BLUE +'['#line:137
+    O0O00OOOOOOO0OO0O =']'+OO00O0O0000O0O0O0 .Style .RESET_ALL +' '#line:138
+    OO00O00OOOOO000O0 =OO00O0O0000O0O0O0 .Fore .YELLOW #line:139
+    OOO00O00OOO0OO0O0 =OO00O0O0000O0O0O0 .Style .RESET_ALL #line:140
+    print (OO0O0000O0000000O +OOOO0OOOO0OO00O00 ('%H:%M:%S',OOO0OO000000O0000 ())+O0O00OOOOOOO0OO0O +OO00O00OOOOO000O0 +'Symbol: '+OOO00O00OOO0OO0O0 +OOOO00OO0O0O0O0O0 )#line:141
+    OOO000OOOO00OOOO0 =getTicker (OOOO00OO0O0O0O0O0 )#line:142
+    print (OO0O0000O0000000O +OOOO0OOOO0OO00O00 ('%H:%M:%S',OOO0OO000000O0000 ())+O0O00OOOOOOO0OO0O +OO00O00OOOOO000O0 +'Current Price: '+OOO00O00OOO0OO0O0 +'%.8f'%OOO000OOOO00OOOO0 )#line:143
+    OOO00000OOO00O0O0 =USD_BTC_Price ()#line:144
+    OO0OOO00O0O000OO0 =getBalance ('btc')#line:145
+    print (OO0O0000O0000000O +OOOO0OOOO0OO00O00 ('%H:%M:%S',OOO0OO000000O0000 ())+O0O00OOOOOOO0OO0O +OO00O00OOOOO000O0 +'Bitcoin Balance:  '+OOO00O00OOO0OO0O0 +'%.8f'%OO0OOO00O0O000OO0 +' | $'+str (OO0OOO00O0O000OO0 *OOO00000OOO00O0O0 ))#line:146
+    print (OO0O0000O0000000O +OOOO0OOOO0OO00O00 ('%H:%M:%S',OOO0OO000000O0000 ())+O0O00OOOOOOO0OO0O +OO00O00OOOOO000O0 +'Amount to use:  '+OOO00O00OOO0OO0O0 +'%.8f'%OO00O0000OO00O0OO +' | $'+str (OO00O0000OO00O0OO *OOO00000OOO00O0O0 ))#line:147
+    O0OO0OOO0O0O000OO =OO00O0000OO00O0OO /OOO000OOOO00OOOO0 #line:148
+    print (OO0O0000O0000000O +OOOO0OOOO0OO00O00 ('%H:%M:%S',OOO0OO000000O0000 ())+O0O00OOOOOOO0OO0O +OO00O00OOOOO000O0 +'Amount To Purchase: '+OOO00O00OOO0OO0O0 +'%.8f'%O0OO0OOO0O0O000OO )#line:149
+    print ('------------------------------------'+OOO00O00OOO0OO0O0 )#line:150
+    print (' ')#line:151
+    if float (O0000O00000O00OO0 )!=0 :#line:153
+        OOO0O0OOOO0O0O0OO ,O0O0O000O0O000O0O =marketHistory (OOOO00OO0O0O0O0O0 )#line:154
+        OOO0OO00O0OO0OO00 =config .get ('RiskMultiplier',O0000O00000O00OO0 )#line:155
+        O0O0O00OOOO00OOO0 =OOO0O0OOOO0O0O0OO *float (OOO0OO00O0OO0OO00 )#line:156
+        O0OO00O0OO00OOO00 =O0O0O000O0O000O0O *float (OOO0OO00O0OO0OO00 )#line:157
+        if OOO0O0OOOO0O0O0OO !=0 and OOO000OOOO00OOOO0 +OOO000OOOO00OOOO0 *float (OO0OO0O0O00OO00O0 )>=O0O0O00OOOO00OOO0 :#line:158
+            print ('Buy conditions not met, canceling order.')#line:159
+            print ('price 1')#line:160
+            O00OOOOOOO0OO0O00 =OOO000OOOO00OOOO0 *OOO00000OOO00O0O0 #line:161
+            print ('Last Price: BTC '+'%.8f'%OOO000OOOO00OOOO0 +' | $'+'%.2f'%O00OOOOOOO0OO0O00 )#line:162
+            O0OO00OOOO0OO0O00 =OOO000OOOO00OOOO0 +OOO000OOOO00OOOO0 *float (OO0OO0O0O00OO00O0 )#line:163
+            OO00O0OO00OOOO0O0 =O0OO00OOOO0OO0O00 *OOO00000OOO00O0O0 #line:164
+            print ('Potential Sell Price: BTC '+'%.2f'%O0OO00OOOO0OO0O00 +' | $'+'%.2f'%OO00O0OO00OOOO0O0 )#line:165
+            O000OO00O0OO00OO0 =O0O0O00OOOO00OOO0 *OOO00000OOO00O0O0 #line:166
+            print ('Price Limit: BTC '+'%.8f'%O0O0O00OOOO00OOO0 +' | $'+'%.2f'%O000OO00O0OO00OO0 )#line:167
+            OO0O0000O0000000O =getTicker (OOOO00OO0O0O0O0O0 )#line:168
+            OO000OO0000OO0O00 =OO0O0000O0000000O *OOO00000OOO00O0O0 #line:169
+            print ('Current Price: BTC '+'%.8f'%OO0O0000O0000000O +' | $'+'%.2f'%OO000OO0000OO0O00 )#line:170
+            return #line:171
+        if O0O0O000O0O000O0O !=0 and OOO000OOOO00OOOO0 +OOO000OOOO00OOOO0 *float (OO0OO0O0O00OO00O0 )>=O0OO00O0OO00OOO00 :#line:174
+            print ('Buy conditions not met, canceling order.')#line:175
+            print ('price 2')#line:176
+            O00OOOOOOO0OO0O00 =OOO000OOOO00OOOO0 *OOO00000OOO00O0O0 #line:177
+            print ('Last Price: BTC '+'%.8f'%OOO000OOOO00OOOO0 +' | $'+'%.2f'%O00OOOOOOO0OO0O00 )#line:178
+            O0OO00OOOO0OO0O00 =OOO000OOOO00OOOO0 +OOO000OOOO00OOOO0 *float (OO0OO0O0O00OO00O0 )#line:179
+            OO00O0OO00OOOO0O0 =O0OO00OOOO0OO0O00 *OOO00000OOO00O0O0 #line:180
+            print ('Potential Sell Price: BTC '+'%.2f'%O0OO00OOOO0OO0O00 +' | $'+'%.2f'%OO00O0OO00OOOO0O0 )#line:181
+            O000OO00O0OO00OO0 =O0O0O00OOOO00OOO0 *OOO00000OOO00O0O0 #line:182
+            print ('Price Limit: BTC '+'%.8f'%O0O0O00OOOO00OOO0 +' | $'+'%.2f'%O000OO00O0OO00OO0 )#line:183
+            OO0O0000O0000000O =getTicker (OOOO00OO0O0O0O0O0 )#line:184
+            OO000OO0000OO0O00 =OO0O0000O0000000O *OOO00000OOO00O0O0 #line:185
+            print ('Current Price: BTC '+'%.8f'%OO0O0000O0000000O +' | $'+'%.2f'%OO000OO0000OO0O00 )#line:186
+            return #line:187
+    OO00O0O000000OOO0 =buyOrder (OOOO00OO0O0O0O0O0 ,O0OO0OOO0O0O000OO )#line:189
+    O00O00000000O00OO =True #line:190
+    print (OO0O0000O0000000O +OOOO0OOOO0OO00O00 ('%H:%M:%S',OOO0OO000000O0000 ())+O0O00OOOOOOO0OO0O +OO00O00OOOOO000O0 +'Placing Order...')#line:191
+    while O00O00000000O00OO :#line:192
+        O0OO00O0O0OO00OOO =getOrder (str (OO00O0O000000OOO0 [0 ]))#line:193
+        if O0OO00O0O0OO00OOO ['IsOpen']==False :#line:195
+            print (OO0O0000O0000000O +OOOO0OOOO0OO00O00 ('%H:%M:%S',OOO0OO000000O0000 ())+O0O00OOOOOOO0OO0O +OO00O00OOOOO000O0 +'Order Successful!')#line:196
+            print (OO0O0000O0000000O +OOOO0OOOO0OO00O00 ('%H:%M:%S',OOO0OO000000O0000 ())+O0O00OOOOOOO0OO0O +OO00O00OOOOO000O0 +'Price: '+OOO00O00OOO0OO0O0 +'%.8f'%O0OO00O0O0OO00OOO ['Limit'])#line:197
+            print (OO0O0000O0000000O +OOOO0OOOO0OO00O00 ('%H:%M:%S',OOO0OO000000O0000 ())+O0O00OOOOOOO0OO0O +OO00O00OOOOO000O0 +'Bitcoin Balance: '+OOO00O00OOO0OO0O0 +'%.8f'%getBalance ('btc'))#line:198
+            print ('------------------------------------')#line:199
+            print (' ')#line:200
+            O00O00000000O00OO =False #line:201
+    O0OO00O0O0OO00OOO =getOrder (str (OO00O0O000000OOO0 [0 ]))#line:203
+    OOOOO0OOO000O0OOO =O0OO00O0O0OO00OOO ['Limit']*float (OO0OO0O0O00OO00O0 )#line:204
+    O000O0O0000O000OO =O0OO00O0O0OO00OOO ['Limit']+OOOOO0OOO000O0OOO #line:205
+    O00000O0OO00O00O0 =O000O0O0000O000OO /(1 +float (SellPercent ))#line:206
+    OO0000O000000O0O0 =sellOrder (OOOO00OO0O0O0O0O0 ,O00000O0OO00O00O0 )#line:207
+    print (OO0O0000O0000000O +OOOO0OOOO0OO00O00 ('%H:%M:%S',OOO0OO000000O0000 ())+O0O00OOOOOOO0OO0O +OO00O00OOOOO000O0 +'Sell Order Placed!')#line:208
+    print (OO0O0000O0000000O +OOOO0OOOO0OO00O00 ('%H:%M:%S',OOO0OO000000O0000 ())+O0O00OOOOOOO0OO0O +OO00O00OOOOO000O0 +'Price: '+OOO00O00OOO0OO0O0 +'%.8f'%O00000O0OO00O00O0 )#line:209
+    print (OO0O0000O0000000O +OOOO0OOOO0OO00O00 ('%H:%M:%S',OOO0OO000000O0000 ())+O0O00OOOOOOO0OO0O +OO00O00OOOOO000O0 +'Patiently Waiting...'+OOO00O00OOO0OO0O0 )#line:210
+    O0OO00000O00O0OO0 =True #line:211
+    while O0OO00000O00O0OO0 :#line:212
+        O0OO00O0O0OO00OOO =getOrder (str (OO0000O000000O0O0 ))#line:213
+        print (OO0O0000O0000000O +OOOO0OOOO0OO00O00 ('%H:%M:%S',OOO0OO000000O0000 ())+O0O00OOOOOOO0OO0O +OO00O00OOOOO000O0 +"Current Price: "+OOO00O00OOO0OO0O0 +'%.8f'%getTicker (OOOO00OO0O0O0O0O0 ),end ="\r")#line:215
+        if O0OO00O0O0OO00OOO ['IsOpen']==False :#line:216
+            print ('------------------------------------')#line:217
+            print (OO0O0000O0000000O +OOOO0OOOO0OO00O00 ('%H:%M:%S',OOO0OO000000O0000 ())+O0O00OOOOOOO0OO0O +OO00O00OOOOO000O0 +'Sold!')#line:218
+            print (OO0O0000O0000000O +OOOO0OOOO0OO00O00 ('%H:%M:%S',OOO0OO000000O0000 ())+O0O00OOOOOOO0OO0O +OO00O00OOOOO000O0 +'Bitcoin Balance: '+OOO00O00OOO0OO0O0 +'%.8f'%getBalance ('btc'))#line:219
+            OOO00000OOO00O0O0 =USD_BTC_Price ()#line:220
+            print (OO0O0000O0000000O +OOOO0OOOO0OO00O00 ('%H:%M:%S',OOO0OO000000O0000 ())+O0O00OOOOOOO0OO0O +OO00O00OOOOO000O0 +'Bitcoin Balance in USD: '+OOO00O00OOO0OO0O0 +str (getBalance ('btc')*OOO00000OOO00O0O0 ))#line:221
+            O0OO00000O00O0OO0 =False #line:222
+def main ():#line:225
+    OOOOO00OO0O0O000O =getBalance ('btc')#line:226
+    OOO00OO0OO0O000O0 =USD_BTC_Price ()#line:227
+    OOO0OO0OOO00O0000 =OOOOO00OO0O0O000O *OOO00OO0OO0O000O0 #line:228
+    print (OO00O0O0000O0O0O0 .Fore .RED +'_____________________________________________________________________')#line:229
+    print (OO00O0O0000O0O0O0 .Fore .RED +'Balance (BTC): '+str (OOOOO00OO0O0O000O ))#line:230
+    print (OO00O0O0000O0O0O0 .Fore .RED +'Balance in USD: '+str (OOO0OO0OOO00O0000 ))#line:231
+    print (OO00O0O0000O0O0O0 .Fore .RED +'_____________________________________________________________________')#line:232
+    if OO0OO00000OOOO0OO .system ()=="Windows":#line:233
+        O0OOO00OOOOOO0O00 =input ('[1] Risk Multiplier: ')#line:234
+        OO0000O0OOOOOOOOO =input ('[2] % of bitcoin to spend: ')#line:235
+        OO0OOO0O0000O0O00 =input ('[3] Profit %: ')#line:236
+        O0OOO0OOO0O0O0OO0 =input ('[4] Coin: ')#line:237
+    else :#line:238
+        O0OOO00OOOOOO0O00 =input (OO00O0O0000O0O0O0 .Fore .CYAN +'[1] Risk Multiplier: ')#line:239
+        OO0000O0OOOOOOOOO =input (OO00O0O0000O0O0O0 .Fore .CYAN +'[2] % of bitcoin to spend: ')#line:240
+        OO0OOO0O0000O0O00 =input (OO00O0O0000O0O0O0 .Fore .CYAN +'[3] Profit %: ')#line:241
+        O0OOO0OOO0O0O0OO0 =input (OO00O0O0000O0O0O0 .Fore .CYAN +'[4] Coin: ')#line:242
+    if len (OO0OOO0O0000O0O00 )<=1 :#line:244
+        OO0OOO0O0000O0O00 ='0.0'+OO0OOO0O0000O0O00 #line:245
+    elif len (OO0OOO0O0000O0O00 )<=2 :#line:246
+        OO0OOO0O0000O0O00 ='0.'+OO0OOO0O0000O0O00 #line:247
+    else :#line:248
+        if len (OO0OOO0O0000O0O00 )<=3 :#line:249
+            OO0OOO0O0000O0O00 =OO0OOO0O0000O0O00 [0 ]+'.'+OO0OOO0O0000O0O00 [1 :]#line:250
+        else :#line:251
+            OO0OOO0O0000O0O00 =OO0OOO0O0000O0O00 [0 :2 ]#line:252
+    if len (OO0000O0OOOOOOOOO )<=1 :#line:253
+        OO0000O0OOOOOOOOO ='0.0'+OO0000O0OOOOOOOOO #line:254
+    elif len (OO0000O0OOOOOOOOO )<=2 :#line:255
+        OO0000O0OOOOOOOOO ='0.'+OO0000O0OOOOOOOOO #line:256
+    else :#line:257
+        if len (OO0000O0OOOOOOOOO )<=3 :#line:258
+            OO0000O0OOOOOOOOO =OO0000O0OOOOOOOOO [0 ]+'.'+OO0000O0OOOOOOOOO [1 :]#line:259
+        else :#line:260
+            OO0000O0OOOOOOOOO =OO0000O0OOOOOOOOO [0 :2 ]#line:261
+    OOOO00O0O0O0O00O0 =OOOOO00OO0O0O000O *float (OO0000O0OOOOOOOOO )#line:263
+    Trade (O0OOO0OOO0O0O0OO0 .lower (),OO0OOO0O0000O0O00 ,OOOO00O0O0O0O00O0 ,O0OOO00OOOOOO0O00 )
+#e9015584e6a44b14988f13e2298bcbf9
+
