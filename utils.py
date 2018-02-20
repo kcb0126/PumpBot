@@ -1,3 +1,7 @@
+import time
+
+import msvcrt
+
 
 def percentageFix(pricepercent, volumepercent):
     if len(pricepercent) <= 1:
@@ -18,3 +22,16 @@ def percentageFix(pricepercent, volumepercent):
     else:
         volumepercent = volumepercent[0:2]
     return (pricepercent, volumepercent)
+
+def input_with_timeout(timeout=30.0):
+    finishat = time.time() + timeout
+    result = []
+    while True:
+        if msvcrt.kbhit():
+            result.append(msvcrt.getche())
+            if result[-1] == b'\r':   # or \n, whatever Win returns;-)
+                return bytes.join(b'', result[:-1]).decode('utf-8')
+            time.sleep(0.1)          # just to yield to other processes/threads
+        else:
+            if time.time() > finishat:
+                return None

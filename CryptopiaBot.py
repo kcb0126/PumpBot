@@ -5,6 +5,9 @@ import time as OOO00000OOO0OOO00 #line:4
 import hmac as OOO00O00O000OO00O #line:5
 import hashlib as O00OOO0OOOO0OO0OO #line:6
 import pdb as OO0OO0000OOOO0OO0 #line:7
+
+import sys
+
 import utils as OOO00O0O0O000000O #line:8
 import colorama as O0OO00O00000OOO0O #line:9
 import platform as O0O00O00O00O00OO0 #line:10
@@ -14,10 +17,13 @@ import datetime as O00OO0OO00OO0000O #line:13
 import base64 as OOO00OOOOOOO0000O #line:14
 import configparser as O00O000O0OOOO0OO0 #line:15
 import sys as O0OO00O0O0000OO0O #line:16
+import CryptopiaApiManager as ApiManager
 config =O00O000O0OOOO0OO0 .ConfigParser ()#line:17
 config .readfp (open ('config.txt'))#line:18
 key =config .get ('Cryptopia','Key')#line:19
 secret =config .get ('Cryptopia','Secret')#line:20
+manager = ApiManager.Api(key, secret)
+currentSellOrderId = -1
 BuyPercent =config .get ('PriceLip','BuyPercent')#line:21
 SellPercent =config .get ('PriceLip','SellPercent')#line:22
 BuyPercent ,SellPercent =OOO00O0O0O000000O .percentageFix (BuyPercent ,SellPercent )#line:23
@@ -198,10 +204,45 @@ def Trade (O00O0OOO000O00OOO ,O00OO00000OOOO00O ,OOOOO000OOOOO000O ,O0O0OOO0O000
     print (OOO0OOO0000OOO000 +O0OO00OO000O0OOO0 ('%H:%M:%S',O0OO0000O00O0OO0O ())+O0O0O000OOOOO0O00 +OO00O0O0O000OOO00 +'Price: '+OO0O0O0O0OO0O00O0 +'%.8f'%OOO0OOOO0000O00O0 )#line:222
     print ('------------------------------------')#line:223
     print (' ')#line:224
+    #begin
+    originalPrice = OOO0OOO0000OOO000
+    while True:
+        price = getTicker(O00O0OOO000O00OOO)
+        percentage = price / originalPrice * 100
+        sys.stdout.write("\r" + str(percentage) + "% (0=Cancel order | 1=Sell on market price)")
+        option = OOO00O0O0O000000O.input_with_timeout(1)
+        if option == '0':
+            cancelled = cancelOrderById(OO00OOOOO00000OOO)
+            if cancelled:
+                print('Order cancelled')
+                break
+        elif option == '1':
+            OO000O00O0OOO0OO0 = sellOrder(O00O0OOO000O00OOO, OOO0OOOO0000O00O0)  # line:229
+            currentSellOrderId = OO000O00O0OOO0OO0
+            print(OOO0OOO0000OOO000 + O0OO00OO000O0OOO0('%H:%M:%S', O0OO0000O00O0OO0O()) + O0O0O000OOOOO0O00 + OO00O0O0O000OOO00 + 'Sell Order Placed!')  # line:230
+            print(OOO0OOO0000OOO000 + O0OO00OO000O0OOO0('%H:%M:%S', O0OO0000O00O0OO0O()) + O0O0O000OOOOO0O00 + OO00O0O0O000OOO00 + 'Price: ' + OO0O0O0O0OO0O00O0 + '%.8f' % OOO0OOOO0000O00O0)  # line:231
+            print(OOO0OOO0000OOO000 + O0OO00OO000O0OOO0('%H:%M:%S', O0OO0000O00O0OO0O()) + O0O0O000OOOOO0O00 + OO00O0O0O000OOO00 + 'Patiently Waiting...' + OO0O0O0O0OO0O00O0)  # line:232
+            OOO000OOOOOO0000O = True  # line:233
+            while OOO000OOOOOO0000O:  # line:234
+                O0OOO00O0OOO00000 = getOrder(O0OOOO0000OOO00O0)  # line:235
+                for OOO000OOO0O0O0O0O in O0OOO00O0OOO00000:  # line:237
+                    if OO000O00O0OOO0OO0 == OOO000OOO0O0O0O0O['TradeId']:  # line:238
+                        print('------------------------------------')  # line:239
+                        print(OOO0OOO0000OOO000 + O0OO00OO000O0OOO0('%H:%M:%S', O0OO0000O00O0OO0O()) + O0O0O000OOOOO0O00 + OO00O0O0O000OOO00 + 'Sold!')  # line:240
+                        print(OOO0OOO0000OOO000 + O0OO00OO000O0OOO0('%H:%M:%S', O0OO0000O00O0OO0O()) + O0O0O000OOOOO0O00 + OO00O0O0O000OOO00 + 'Bitcoin Balance: ' + OO0O0O0O0OO0O00O0 + '%.8f' % getBalance(
+                            'btc'))  # line:241
+                        OOOO00O00000O000O = USD_BTC_Price()  # line:242
+                        print(OOO0OOO0000OOO000 + O0OO00OO000O0OOO0('%H:%M:%S', O0OO0000O00O0OO0O()) + O0O0O000OOOOO0O00 + OO00O0O0O000OOO00 + 'Bitcoin Balance in USD: ' + OO0O0O0O0OO0O00O0 + str(
+                            getBalance('btc') * OOOO00O00000O000O))  # line:243
+                        OOO000OOOOOO0000O = False  # line:244
+            break
+    return
+    #end
     OO0000OOO0OO0O000 =OOO0OOOO0000O00O0 *float (O00OO00000OOOO00O )#line:226
     O00OO0O0O00O0O0OO =OOO0OOOO0000O00O0 +OO0000OOO0OO0O000 #line:227
     OOO0OOOO0000O00O0 =O00OO0O0O00O0O0OO /(1 +float (SellPercent ))#line:228
     OO000O00O0OOO0OO0 =sellOrder (O00O0OOO000O00OOO ,OOO0OOOO0000O00O0 )#line:229
+    currentSellOrderId = OO000O00O0OOO0OO0
     print (OOO0OOO0000OOO000 +O0OO00OO000O0OOO0 ('%H:%M:%S',O0OO0000O00O0OO0O ())+O0O0O000OOOOO0O00 +OO00O0O0O000OOO00 +'Sell Order Placed!')#line:230
     print (OOO0OOO0000OOO000 +O0OO00OO000O0OOO0 ('%H:%M:%S',O0OO0000O00O0OO0O ())+O0O0O000OOOOO0O00 +OO00O0O0O000OOO00 +'Price: '+OO0O0O0O0OO0O00O0 +'%.8f'%OOO0OOOO0000O00O0 )#line:231
     print (OOO0OOO0000OOO000 +O0OO00OO000O0OOO0 ('%H:%M:%S',O0OO0000O00O0OO0O ())+O0O0O000OOOOO0O00 +OO00O0O0O000OOO00 +'Patiently Waiting...'+OO0O0O0O0OO0O00O0 )#line:232
@@ -216,6 +257,17 @@ def Trade (O00O0OOO000O00OOO ,O00OO00000OOOO00O ,OOOOO000OOOOO000O ,O0O0OOO0O000
                 OOOO00O00000O000O =USD_BTC_Price ()#line:242
                 print (OOO0OOO0000OOO000 +O0OO00OO000O0OOO0 ('%H:%M:%S',O0OO0000O00O0OO0O ())+O0O0O000OOOOO0O00 +OO00O0O0O000OOO00 +'Bitcoin Balance in USD: '+OO0O0O0O0OO0O00O0 +str (getBalance ('btc')*OOOO00O00000O000O ))#line:243
                 OOO000OOOOOO0000O =False #line:244
+def cancelAllTrade():
+    result = manager.cancel_trade('All', '-1')
+    if result[0] == None:
+        print(result[1])
+def cancelOrderById(tradeId):
+    result = manager.cancel_trade('Trade', str(tradeId), '-1')
+    if result[0] == None:
+        print(result[1])
+        return False
+    else:
+        return True
 def main ():#line:247
     O0O000O00000O0OOO =getBalance ('BTC')#line:249
     OOOOOOOOOO00O00OO =USD_BTC_Price ()#line:250
