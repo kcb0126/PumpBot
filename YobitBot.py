@@ -11,6 +11,7 @@ import colorama as O00O0O0OO0O00OO00 #line:17
 import utils as O0OO0OO0O0O00O000 #line:18
 import datetime as O0000O0OO0O000OO0 #line:19
 import random as O0O00OO0OO00O00O0 #line:20
+import YobitApiManager
 try :#line:21
     from urllib import urlencode as OO0OO000OOO000OOO #line:22
     from urlparse import urljoin as O0OOO000O0OO0O000 #line:23
@@ -24,19 +25,21 @@ config =O000O0O0OOOO00O00 .ConfigParser ()#line:31
 config .readfp (open ('config.txt'))#line:32
 key =config .get ('Yobit','Key')#line:33
 secret =config .get ('Yobit','Secret')#line:34
+manager = YobitApiManager.YoBit(key, secret)
 secret =bytes (secret ,'utf8')#line:35
 BuyPercent =config .get ('PriceLip','BuyPercent')#line:36
 SellPercent =config .get ('PriceLip','SellPercent')#line:37
 BuyPercent ,SellPercent =O0OO0OO0O0O00O000 .percentageFix (BuyPercent ,SellPercent )#line:38
+lastNonce = int(O00O00OOOOO0O0O0O.time())
 def nonceHandler ():#line:40
-    O0000OOO000OOO000 =open ('nonce.txt')#line:41
-    OO00000OO0OO00O0O =O0000OOO000OOO000 .readlines ()#line:42
-    O0000OOO000OOO000 .close ()#line:43
-    OOOO0O0O00OOOO0O0 =int (OO00000OO0OO00O0O [0 ])+1 #line:44
-    OO0OO000OO000OOOO =open ('nonce.txt','w+')#line:45
-    OO0OO000OO000OOOO .write (str (OOOO0O0O00OOOO0O0 ))#line:46
-    OO0OO000OO000OOOO .close ()#line:47
-    return OOOO0O0O00OOOO0O0 #line:48
+    global lastNonce
+    while True:
+        nonce = int(O00O00OOOOO0O0O0O.time())
+        if nonce != lastNonce:
+            break
+        O00O00OOOOO0O0O0O.sleep(1)
+    lastNonce = nonce
+    return lastNonce
 def generate_nonce (length =9 ):#line:51
     ""#line:52
     return ''.join ([str (O0O00OO0OO00O00O0 .randint (0 ,9 ))for OOOO00O00OO0OOOO0 in range (length )])#line:53
@@ -47,6 +50,16 @@ def getTicker (OO00O0000O0O000O0 ):#line:60
     OOOOOOOOOOO00O00O =OOO0000000O0O0O00 .get (O000O00O0OOOO00OO ,headers ={'apisign':O000O000O0OO00O0O .new (secret ,O000O00O0OOOO00OO .encode (),O0O0O0000000000OO .sha512 ).hexdigest ()})#line:62
     OO0O0OO0OO00OOOOO =OOOOO00OO0O00000O .loads (OOOOOOOOOOO00O00O .text )#line:63
     return OO0O0OO0OO00OOOOO [OO00O0000O0O000O0 +'_btc']['last']#line:64
+def getTickerBuy (OO00O0000O0O000O0 ):#line:60
+    O000O00O0OOOO00OO ='https://yobit.net/api/3/ticker/'+OO00O0000O0O000O0 +'_btc'#line:61
+    OOOOOOOOOOO00O00O =OOO0000000O0O0O00 .get (O000O00O0OOOO00OO ,headers ={'apisign':O000O000O0OO00O0O .new (secret ,O000O00O0OOOO00OO .encode (),O0O0O0000000000OO .sha512 ).hexdigest ()})#line:62
+    OO0O0OO0OO00OOOOO =OOOOO00OO0O00000O .loads (OOOOOOOOOOO00O00O .text )#line:63
+    return OO0O0OO0OO00OOOOO [OO00O0000O0O000O0 +'_btc']['buy']#line:64
+def getTickerSell (OO00O0000O0O000O0 ):#line:60
+    O000O00O0OOOO00OO ='https://yobit.net/api/3/ticker/'+OO00O0000O0O000O0 +'_btc'#line:61
+    OOOOOOOOOOO00O00O =OOO0000000O0O0O00 .get (O000O00O0OOOO00OO ,headers ={'apisign':O000O000O0OO00O0O .new (secret ,O000O00O0OOOO00OO .encode (),O0O0O0000000000OO .sha512 ).hexdigest ()})#line:62
+    OO0O0OO0OO00OOOOO =OOOOO00OO0O00000O .loads (OOOOOOOOOOO00O00O .text )#line:63
+    return OO0O0OO0OO00OOOOO [OO00O0000O0O000O0 +'_btc']['sell']#line:64
 def getBalance (OO0O00OOOO0O0O00O ):#line:67
     OOOO0O0OO00O0OOO0 ={}#line:68
     O0OO0OOOO000O000O ='https://yobit.net/tapi'#line:69
@@ -60,6 +73,10 @@ def getBalance (OO0O00OOOO0O0O00O ):#line:67
         OOO00OO00OOO00O0O ={'Content-Type':'application/x-www-form-urlencoded','Key':key ,'Sign':OOO00OO0O00O00O00 }#line:79
         O0OO0000000O0O00O =OOO0000000O0O0O00 .post (O0OO0OOOO000O000O ,data =OOOO0O0OO00O0OOO0 ,headers =OOO00OO00OOO00O0O )#line:80
         OO00000O0OOOOO0O0 =OOOOO00OO0O00000O .loads (O0OO0000000O0O00O .text )#line:81
+        if OO00000O0OOOOO0O0 ['success']==0 :#line:125
+            #print(OO00000O0OOOOO0O0 ['error'])
+            continue
+            O00OO000000OOO00O .exit (OO00000O0OOOOO0O0 ['error'])#line:126
         if OO0O00OOOO0O0O00O in OO00000O0OOOOO0O0 ['return']['funds']:#line:82
             return OO00000O0OOOOO0O0 ['return']['funds'][OO0O00OOOO0O0O00O ]#line:83
             OO000OO00O0O00OO0 =1 #line:84
@@ -77,8 +94,8 @@ def getOrder (OOOOO000OO000OO00 ):#line:89
     OO0O000O00OOOO0O0 =OOOOO00OO0O00000O .loads (O0O0O000O000OOO00 .text )#line:102
     return OO0O000O00OOOO0O0 ['return'][OOOOO000OO000OO00 ]#line:103
 def buyOrder (OOOOO00OO0O0OO00O ,O0000OO00OOO00OOO ):#line:106
+    OO000OOO00OOOO0O0 =getTickerSell (OOOOO00OO0O0OO00O )#line:108
     OO00O0000O00OO0O0 =nonceHandler ()#line:107
-    OO000OOO00OOOO0O0 =getTicker (OOOOO00OO0O0OO00O )#line:108
     O00O0OOO0OOO0OOO0 =OO000OOO00OOOO0O0 *(1 +float (BuyPercent ))#line:109
     OO0O00OO0O000OO00 ={}#line:110
     O00000O0O000O0O0O ='https://yobit.net/tapi'#line:111
@@ -113,8 +130,14 @@ def sellOrder (O0O00O000O0OOOOOO ,OO0O0OOO000000000 ):#line:134
     O00000000O00000OO =OO0OO000OOO000OOO (OO00OO0O0OO0OOOOO )#line:145
     O0O0O00OO00OO0O0O =O000O000O0OO00O0O .new (secret ,O00000000O00000OO .encode ('utf8'),O0O0O0000000000OO .sha512 ).hexdigest ()#line:146
     O0OOOOO00O0OOO000 ={'Content-Type':'application/x-www-form-urlencoded','Key':key ,'Sign':O0O0O00OO00OO0O0O }#line:149
-    O0000O00O000OOO0O =OOO0000000O0O0O00 .post (OOOOO000O0OOOO0O0 ,data =OO00OO0O0OO0OOOOO ,headers =O0OOOOO00O0OOO000 )#line:150
-    OO0000O0OO000OO00 =OOOOO00OO0O00000O .loads (O0000O00O000OOO0O .text )#line:151
+    while True:
+        O0000O00O000OOO0O =OOO0000000O0O0O00 .post (OOOOO000O0OOOO0O0 ,data =OO00OO0O0OO0OOOOO ,headers =O0OOOOO00O0OOO000 )#line:150
+        OO0000O0OO000OO00 =OOOOO00OO0O00000O .loads (O0000O00O000OOO0O .text )#line:151
+        if OO0000O0OO000OO00['success'] == 0:
+            print("Debug: " + OO0000O0OO000OO00['error'])
+            continue
+        else:
+            break
     O000OOO0OO0OO000O =OO0000O0OO000OO00 ['return']['order_id']#line:152
     return O000OOO0OO0OO000O #line:153
 def marketHistory (OOO0OOOOO0O0OO0OO ):#line:156
@@ -149,12 +172,12 @@ def marketHistory (OOO0OOOOO0O0OO0OO ):#line:156
             break #line:187
     return (O0O0OO0OO00OO00O0 ,O00OOOOO000O0O000 )#line:189
 def Trade (OO000OOOO0000OOOO ,O0000000OO00OOO00 ,O0O00O0O000OOO000 ,O0OO0O0O00OOO0OO0 ):#line:192
-    O000O0O0OOO00OOOO =O00O0O0OO0O00OO00 .Fore .YELLOW +O00O0O0OO0O00OO00 .Back .BLUE +'['#line:194
-    OOOO0OOOOO00000OO =']'+O00O0O0OO0O00OO00 .Style .RESET_ALL +' '#line:195
-    OOOO0O000O0OOO00O =O00O0O0OO0O00OO00 .Fore .YELLOW #line:196
-    OOO00000OOOOOO00O =O00O0O0OO0O00OO00 .Style .RESET_ALL #line:197
+    O000O0O0OOO00OOOO =O00O0O0OO0O00OO00 .Fore .BLACK +O00O0O0OO0O00OO00 .Back .LIGHTCYAN_EX +'['#line:194
+    OOOO0OOOOO00000OO =']'+O00O0O0OO0O00OO00 .Style .RESET_ALL + O00O0O0OO0O00OO00.Back.BLACK +' '#line:195
+    OOOO0O000O0OOO00O =O00O0O0OO0O00OO00 .Fore .LIGHTCYAN_EX #line:196
+    OOO00000OOOOOO00O =O00O0O0OO0O00OO00 .Style .RESET_ALL + O00O0O0OO0O00OO00.Fore.LIGHTWHITE_EX #line:197
     print (O000O0O0OOO00OOOO +OOOOOOOO0O00O0OO0 ('%H:%M:%S',OOO0OOOOO000O000O ())+OOOO0OOOOO00000OO +OOOO0O000O0OOO00O +'Symbol: '+OOO00000OOOOOO00O +OO000OOOO0000OOOO )#line:199
-    OO0O0O0OOO000000O =getTicker (OO000OOOO0000OOOO )#line:200
+    OO0O0O0OOO000000O =getTickerSell (OO000OOOO0000OOOO )#line:200
     print (O000O0O0OOO00OOOO +OOOOOOOO0O00O0OO0 ('%H:%M:%S',OOO0OOOOO000O000O ())+OOOO0OOOOO00000OO +OOOO0O000O0OOO00O +'Current Price: '+OOO00000OOOOOO00O +'%.8f'%OO0O0O0OOO000000O )#line:201
     OO0OO00OOO000OO00 =USD_BTC_Price ()#line:202
     OO0OOO0O0OOOO0OOO =getBalance ('btc')#line:203
@@ -182,7 +205,7 @@ def Trade (OO000OOOO0000OOOO ,O0000000OO00OOO00 ,O0O00O0O000OOO000 ,O0OO0O0O00OO
             print ('Potential Sell Price: BTC '+'%.2f'%O000O00OOO00OO0O0 +' | $'+'%.2f'%O000000OOOOO0O00O )#line:228
             O0OOOO00000OOOO0O =O00O0OO000O0000OO *OO0OO00OOO000OO00 #line:229
             print ('Price Limit: BTC '+'%.8f'%O00O0OO000O0000OO +' | $'+'%.2f'%O0OOOO00000OOOO0O )#line:230
-            O000O0O0OOO00OOOO =getTicker (OO000OOOO0000OOOO )#line:231
+            O000O0O0OOO00OOOO =getTickerSell (OO000OOOO0000OOOO )#line:231
             O0O0OOOOOOO0OOOO0 =O000O0O0OOO00OOOO *OO0OO00OOO000OO00 #line:232
             print ('Current Price: BTC '+'%.8f'%O000O0O0OOO00OOOO +' | $'+'%.2f'%O0O0OOOOOOO0OOOO0 )#line:233
             return #line:234
@@ -196,7 +219,7 @@ def Trade (OO000OOOO0000OOOO ,O0000000OO00OOO00 ,O0O00O0O000OOO000 ,O0OO0O0O00OO
             print ('Potential Sell Price: BTC '+'%.2f'%O000O00OOO00OO0O0 +' | $'+'%.2f'%O000000OOOOO0O00O )#line:243
             O0OOOO00000OOOO0O =O00O0OO000O0000OO *OO0OO00OOO000OO00 #line:244
             print ('Price Limit: BTC '+'%.8f'%O00O0OO000O0000OO +' | $'+'%.2f'%O0OOOO00000OOOO0O )#line:245
-            O000O0O0OOO00OOOO =getTicker (OO000OOOO0000OOOO )#line:246
+            O000O0O0OOO00OOOO =getTickerSell (OO000OOOO0000OOOO )#line:246
             O0O0OOOOOOO0OOOO0 =O000O0O0OOO00OOOO *OO0OO00OOO000OO00 #line:247
             print ('Current Price: BTC '+'%.8f'%O000O0O0OOO00OOOO +' | $'+'%.2f'%O0O0OOOOOOO0OOOO0 )#line:248
             return #line:249
@@ -204,65 +227,122 @@ def Trade (OO000OOOO0000OOOO ,O0000000OO00OOO00 ,O0O00O0O000OOO000 ,O0OO0O0O00OO
     OOO0O0OOO00O0O00O =True #line:252
     print (O000O0O0OOO00OOOO +OOOOOOOO0O00O0OO0 ('%H:%M:%S',OOO0OOOOO000O000O ())+OOOO0OOOOO00000OO +OOOO0O000O0OOO00O +'Placing Order...')#line:253
     while OOO0O0OOO00O0O00O :#line:254
-        OOOOO0O00000OO0O0 =getOrder (str (O0000OOOOO0OO0O0O [0 ]))#line:255
-        if OOOOO0O00000OO0O0 ['status']==1 :#line:256
-            print (O000O0O0OOO00OOOO +OOOOOOOO0O00O0OO0 ('%H:%M:%S',OOO0OOOOO000O000O ())+OOOO0OOOOO00000OO +OOOO0O000O0OOO00O +'Order Successful!')#line:257
-            print (O000O0O0OOO00OOOO +OOOOOOOO0O00O0OO0 ('%H:%M:%S',OOO0OOOOO000O000O ())+OOOO0OOOOO00000OO +OOOO0O000O0OOO00O +'Price: '+OOO00000OOOOOO00O +'%.8f'%OOOOO0O00000OO0O0 ['rate'])#line:258
-            print (O000O0O0OOO00OOOO +OOOOOOOO0O00O0OO0 ('%H:%M:%S',OOO0OOOOO000O000O ())+OOOO0OOOOO00000OO +OOOO0O000O0OOO00O +'Bitcoin Balance: '+OOO00000OOOOOO00O +'%.8f'%getBalance ('btc'))#line:259
-            print ('------------------------------------')#line:260
-            print (' ')#line:261
-            OOO0O0OOO00O0O00O =False #line:262
-    OOOOO0O00000OO0O0 =getOrder (str (O0000OOOOO0OO0O0O [0 ]))#line:264
-    OOOOOO0OO000O0000 =OOOOO0O00000OO0O0 ['rate']*float (O0000000OO00OOO00 )#line:265
-    O00O0000OO0000OO0 =OOOOO0O00000OO0O0 ['rate']+OOOOOO0OO000O0000 #line:266
-    O0OOO0O0OOOO0O0O0 =O00O0000OO0000OO0 /(1 +float (SellPercent ))#line:267
-    O0OOOOOOO00O00O00 =sellOrder (OO000OOOO0000OOOO ,O0OOO0O0OOOO0O0O0 )#line:268
-    print (O000O0O0OOO00OOOO +OOOOOOOO0O00O0OO0 ('%H:%M:%S',OOO0OOOOO000O000O ())+OOOO0OOOOO00000OO +OOOO0O000O0OOO00O +'Sell Order Placed!')#line:269
-    print (O000O0O0OOO00OOOO +OOOOOOOO0O00O0OO0 ('%H:%M:%S',OOO0OOOOO000O000O ())+OOOO0OOOOO00000OO +OOOO0O000O0OOO00O +'Price: '+OOO00000OOOOOO00O +'%.8f'%O0OOO0O0OOOO0O0O0 )#line:270
-    print (O000O0O0OOO00OOOO +OOOOOOOO0O00O0OO0 ('%H:%M:%S',OOO0OOOOO000O000O ())+OOOO0OOOOO00000OO +OOOO0O000O0OOO00O +'Patiently Waiting...'+OOO00000OOOOOO00O )#line:271
-    OOOOOOOO00000OOOO =True #line:272
-    while OOOOOOOO00000OOOO :#line:273
-        OOOOO0O00000OO0O0 =getOrder (str (O0OOOOOOO00O00O00 ))#line:274
-        print (O000O0O0OOO00OOOO +OOOOOOOO0O00O0OO0 ('%H:%M:%S',OOO0OOOOO000O000O ())+OOOO0OOOOO00000OO +OOOO0O000O0OOO00O +"Current Price: "+OOO00000OOOOOO00O +'%.8f'%getTicker (OO000OOOO0000OOOO ),end ="\r")#line:275
-        if OOOOO0O00000OO0O0 ['status']==1 :#line:276
-            print ('------------------------------------')#line:277
-            print (O000O0O0OOO00OOOO +OOOOOOOO0O00O0OO0 ('%H:%M:%S',OOO0OOOOO000O000O ())+OOOO0OOOOO00000OO +OOOO0O000O0OOO00O +'Sold!')#line:278
-            print (O000O0O0OOO00OOOO +OOOOOOOO0O00O0OO0 ('%H:%M:%S',OOO0OOOOO000O000O ())+OOOO0OOOOO00000OO +OOOO0O000O0OOO00O +'Bitcoin Balance: '+OOO00000OOOOOO00O +'%.8f'%getBalance ('btc'))#line:279
-            OO0OO00OOO000OO00 =USD_BTC_Price ()#line:280
-            print (O000O0O0OOO00OOOO +OOOOOOOO0O00O0OO0 ('%H:%M:%S',OOO0OOOOO000O000O ())+OOOO0OOOOO00000OO +OOOO0O000O0OOO00O +'Bitcoin Balance in USD: '+OOO00000OOOOOO00O +str (getBalance ('btc')*OO0OO00OOO000OO00 ))#line:281
-            OOOOOOOO00000OOOO =False #line:282
+        result = manager.trade_history(OO000OOOO0000OOOO +'_btc')
+        if result['success'] == 0:
+            #print(result['error'])
+            continue
+        orders = result['return']
+        for key in orders:
+            order = orders[key]
+            if order['order_id'] == str (O0000OOOOO0OO0O0O [0 ]):
+                buyPrice = order['rate']
+                print (O000O0O0OOO00OOOO +OOOOOOOO0O00O0OO0 ('%H:%M:%S',OOO0OOOOO000O000O ())+OOOO0OOOOO00000OO +OOOO0O000O0OOO00O +'Order Successful!')#line:257
+                print (O000O0O0OOO00OOOO +OOOOOOOO0O00O0OO0 ('%H:%M:%S',OOO0OOOOO000O000O ())+OOOO0OOOOO00000OO +OOOO0O000O0OOO00O +'Price: '+OOO00000OOOOOO00O +'%.8f'%buyPrice)#line:258
+                print (O000O0O0OOO00OOOO +OOOOOOOO0O00O0OO0 ('%H:%M:%S',OOO0OOOOO000O000O ())+OOOO0OOOOO00000OO +OOOO0O000O0OOO00O +'Bitcoin Balance: '+OOO00000OOOOOO00O +'%.8f'%getBalance ('btc'))#line:259
+                print ('------------------------------------')#line:260
+                print (' ')#line:261
+                OOO0O0OOO00O0O00O =False #line:262
+                break
+    #begin
+    while True:
+        marketBuyPrice = getTickerBuy(OO000OOOO0000OOOO)
+        percentage = float(marketBuyPrice) / float(buyPrice) * 100
+        percentage = round(percentage, 1)
+        try:
+            print('%.1f' % percentage + "% " + '%.8f' % marketBuyPrice + " / " + '%.8f' % buyPrice + " (0=Cancel | 1=Sell)")
+        except:
+            continue
+        option = O0OO0OO0O0O00O000.input_key_timeout(1)
+        if option == '0':
+            print('Sell is cancelled')
+            break
+        elif option == '1':
+            print('')
+            O0OOO0O0OOOO0O0O0 =marketBuyPrice * (1 - float (SellPercent ))#line:267
+            O0OOOOOOO00O00O00 =sellOrder (OO000OOOO0000OOOO ,O0OOO0O0OOOO0O0O0 )#line:268
+            print (O000O0O0OOO00OOOO +OOOOOOOO0O00O0OO0 ('%H:%M:%S',OOO0OOOOO000O000O ())+OOOO0OOOOO00000OO +OOOO0O000O0OOO00O +'Sell Order Placed!')#line:269
+            print (O000O0O0OOO00OOOO +OOOOOOOO0O00O0OO0 ('%H:%M:%S',OOO0OOOOO000O000O ())+OOOO0OOOOO00000OO +OOOO0O000O0OOO00O +'Price: '+OOO00000OOOOOO00O +'%.8f'%O0OOO0O0OOOO0O0O0 )#line:270
+            print (O000O0O0OOO00OOOO +OOOOOOOO0O00O0OO0 ('%H:%M:%S',OOO0OOOOO000O000O ())+OOOO0OOOOO00000OO +OOOO0O000O0OOO00O +'Patiently Waiting...'+OOO00000OOOOOO00O )#line:271
+            OOOOOOOO00000OOOO =True #line:272
+            while OOOOOOOO00000OOOO :#line:273
+                result = manager.trade_history(OO000OOOO0000OOOO +'_btc')
+                if result['success'] == 0:
+                    #print(result['error'])
+                    continue
+                orders = result['return']
+                for key in orders:
+                    order = orders[key]
+                    if order['order_id'] == str (O0OOOOOOO00O00O00 ):
+                        soldPrice = order['rate']
+                        percentage = float(soldPrice) / float(buyPrice) * 100
+                        percentage = round(percentage, 1)
+                        print (O000O0O0OOO00OOOO +OOOOOOOO0O00O0OO0 ('%H:%M:%S',OOO0OOOOO000O000O ())+OOOO0OOOOO00000OO +OOOO0O000O0OOO00O +"Current Price: "+OOO00000OOOOOO00O +'%.8f'%getTicker (OO000OOOO0000OOOO ),end ="\r")#line:275
+                        print ('------------------------------------')#line:277
+                        print (O000O0O0OOO00OOOO +OOOOOOOO0O00O0OO0 ('%H:%M:%S',OOO0OOOOO000O000O ())+OOOO0OOOOO00000OO +O00O0O0OO0O00OO00.Fore.LIGHTCYAN_EX +'Successfully sold at ' + O00O0O0OO0O00OO00.Style.RESET_ALL + O00O0O0OO0O00OO00.Fore.LIGHTWHITE_EX + '%.8f' % soldPrice + ' / ' + (percentage > 100 and 'profit ' or (percentage < 100 and 'loss ' or '')) + '%.1f' % (percentage - 100) + '%')#line:278
+                        print (O000O0O0OOO00OOOO +OOOOOOOO0O00O0OO0 ('%H:%M:%S',OOO0OOOOO000O000O ())+OOOO0OOOOO00000OO +OOOO0O000O0OOO00O +'Bitcoin Balance: '+OOO00000OOOOOO00O +'%.8f'%getBalance ('btc'))#line:279
+                        OO0OO00OOO000OO00 =USD_BTC_Price ()#line:280
+                        print (O000O0O0OOO00OOOO +OOOOOOOO0O00O0OO0 ('%H:%M:%S',OOO0OOOOO000O000O ())+OOOO0OOOOO00000OO +OOOO0O000O0OOO00O +'Bitcoin Balance in USD: '+OOO00000OOOOOO00O +str (getBalance ('btc')*OO0OO00OOO000OO00 ))#line:281
+                        OOOOOOOO00000OOOO =False #line:282
+                        break
+            break
 def USD_BTC_Price ():#line:285
     OOO0O0OOOO0OOO00O ='https://yobit.net/api/3/ticker/btc_usd'#line:286
     OOO0O0O00O0OOO0O0 =OOO0000000O0O0O00 .get (OOO0O0OOOO0OOO00O ,headers ={'apisign':O000O000O0OO00O0O .new (secret ,OOO0O0OOOO0OOO00O .encode (),O0O0O0000000000OO .sha512 ).hexdigest ()})#line:287
     O0O0O0O00O0O00OOO =OOOOO00OO0O00000O .loads (OOO0O0O00O0OOO0O0 .text )#line:288
     return O0O0O0O00O0O00OOO ['btc_usd']['last']#line:289
 def main ():#line:292
+    global BuyPercent, SellPercent
+    # debug begin
+    #result = manager.trade_history('taxi_btc')
+    #print(result)
+    #orders = result['return']
+    #for key in orders:
+    #    order = orders[key]
+    #    if order['order_id'] == '106715492032422':
+    #        print('%.8f' % order['rate'])
+    #return
+    # end
     OOOOOO0O0O00000OO =getBalance ('btc')#line:293
+    #return # debug
     OO0OOOO00O0OO0O00 =USD_BTC_Price ()#line:294
     OO00O0O0O00O0OO0O =OOOOOO0O0O00000OO *OO0OOOO00O0OO0O00 #line:295
-    print (O00O0O0OO0O00OO00 .Fore .RED +'_____________________________________________________________________')#line:296
-    print (O00O0O0OO0O00OO00 .Fore .RED +'Balance (BTC): '+str (OOOOOO0O0O00000OO ))#line:297
-    print (O00O0O0OO0O00OO00 .Fore .RED +'Balance in USD: '+str (OO00O0O0O00O0OO0O ))#line:298
-    print (O00O0O0OO0O00OO00 .Fore .RED +'_____________________________________________________________________')#line:299
+    print (O00O0O0OO0O00OO00 .Fore .LIGHTCYAN_EX +'_____________________________________________________________________')#line:296
+    print (O00O0O0OO0O00OO00 .Fore .LIGHTCYAN_EX +'                                                                     ')#line:296
+    print (O00O0O0OO0O00OO00 .Fore .LIGHTCYAN_EX +'Balance (BTC): '+str (OOOOOO0O0O00000OO ))#line:297
+    print (O00O0O0OO0O00OO00 .Fore .LIGHTCYAN_EX +'Balance in USD: '+str (OO00O0O0O00O0OO0O ))#line:298
+    print (O00O0O0OO0O00OO00 .Fore .LIGHTCYAN_EX +'_____________________________________________________________________')#line:299
     if O00OOOO0O0O0O00O0 .system ()=="Windows":#line:300
-        OOO0O0000OO00000O =input ('[1] Risk Multiplier: ')#line:301
-        O0OO0O0O00OOOOOO0 =input ('[2] % of bitcoin to spend: ')#line:302
-        OO00O0O0O00O0000O =input ('[3] Profit %: ')#line:303
+        #OOO0O0000OO00000O =input ('[1] Risk Multiplier: ')#line:301
+        O0OO0O0O00OOOOOO0 =input ('[1] % of bitcoin to spend: ')#line:302
+        OO00O0O0O00O00000 =input ('[2] Buy PriceLip %: ')#line:303
+        OO00O0O0O00O000O0 =input ('[3] Sell PriceLip %: ')#line:303
         O0O0OO0OO0O00OO00 =input ('[4] Coin: ')#line:304
     else :#line:305
-        OOO0O0000OO00000O =input (O00O0O0OO0O00OO00 .Fore .CYAN +'[1] Risk Multiplier: ')#line:306
-        O0OO0O0O00OOOOOO0 =input (O00O0O0OO0O00OO00 .Fore .CYAN +'[2] % of bitcoin to spend: ')#line:307
-        OO00O0O0O00O0000O =input (O00O0O0OO0O00OO00 .Fore .CYAN +'[3] Profit %: ')#line:308
+        #OOO0O0000OO00000O =input (O00O0O0OO0O00OO00 .Fore .CYAN +'[1] Risk Multiplier: ')#line:306
+        O0OO0O0O00OOOOOO0 =input (O00O0O0OO0O00OO00 .Fore .CYAN +'[1] % of bitcoin to spend: ')#line:307
+        OO00O0O0O00O00000 =input (O00O0O0OO0O00OO00 .Fore .CYAN +'[2] Buy PriceLip %: ')#line:308
+        OO00O0O0O00O000O0 =input (O00O0O0OO0O00OO00 .Fore .CYAN +'[3] Sell PriceLip %: ')#line:308
         O0O0OO0OO0O00OO00 =input (O00O0O0OO0O00OO00 .Fore .CYAN +'[4] Coin: ')#line:309
-    if len (OO00O0O0O00O0000O )<=1 :#line:311
-        OO00O0O0O00O0000O ='0.0'+OO00O0O0O00O0000O #line:312
-    elif len (OO00O0O0O00O0000O )<=2 :#line:313
-        OO00O0O0O00O0000O ='0.'+OO00O0O0O00O0000O #line:314
+    print('')
+    print('')
+    if len (OO00O0O0O00O00000 )<=1 :#line:311
+        OO00O0O0O00O00000 ='0.0'+OO00O0O0O00O00000 #line:312
+    elif len (OO00O0O0O00O00000 )<=2 :#line:313
+        OO00O0O0O00O00000 ='0.'+OO00O0O0O00O00000 #line:314
     else :#line:315
-        if len (OO00O0O0O00O0000O )<=3 :#line:316
-            OO00O0O0O00O0000O =OO00O0O0O00O0000O [0 ]+'.'+OO00O0O0O00O0000O [1 :]#line:317
+        if len (OO00O0O0O00O00000 )<=3 :#line:316
+            OO00O0O0O00O00000 =OO00O0O0O00O00000 [0 ]+'.'+OO00O0O0O00O00000 [1 :]#line:317
         else :#line:318
-            OO00O0O0O00O0000O =OO00O0O0O00O0000O [0 :2 ]#line:319
+            OO00O0O0O00O00000 =OO00O0O0O00O00000 [0 :2 ]#line:319
+    if len (OO00O0O0O00O000O0 )<=1 :#line:311
+        OO00O0O0O00O000O0 ='0.0'+OO00O0O0O00O000O0 #line:312
+    elif len (OO00O0O0O00O000O0 )<=2 :#line:313
+        OO00O0O0O00O000O0 ='0.'+OO00O0O0O00O000O0 #line:314
+    else :#line:315
+        if len (OO00O0O0O00O000O0 )<=3 :#line:316
+            OO00O0O0O00O000O0 =OO00O0O0O00O000O0 [0 ]+'.'+OO00O0O0O00O000O0 [1 :]#line:317
+        else :#line:318
+            OO00O0O0O00O000O0 =OO00O0O0O00O000O0 [0 :2 ]#line:319
     if len (O0OO0O0O00OOOOOO0 )<=1 :#line:320
         O0OO0O0O00OOOOOO0 ='0.0'+O0OO0O0O00OOOOOO0 #line:321
     elif len (O0OO0O0O00OOOOOO0 )<=2 :#line:322
@@ -273,6 +353,8 @@ def main ():#line:292
         else :#line:327
             O0OO0O0O00OOOOOO0 =O0OO0O0O00OOOOOO0 [0 :2 ]#line:328
     O0OO0O0OOO0O000O0 =OOOOOO0O0O00000OO *float (O0OO0O0O00OOOOOO0 )#line:331
-    Trade (O0O0OO0OO0O00OO00 .lower (),OO00O0O0O00O0000O ,O0OO0O0OOO0O000O0 ,OOO0O0000OO00000O )
+    BuyPercent = OO00O0O0O00O00000
+    SellPercent = OO00O0O0O00O000O0
+    Trade (O0O0OO0OO0O00OO00 .lower (),OO00O0O0O00O00000 ,O0OO0O0OOO0O000O0 ,0 )
 #e9015584e6a44b14988f13e2298bcbf9
 

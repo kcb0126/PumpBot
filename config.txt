@@ -9,13 +9,17 @@ Secret =b84f45cba2989ad33ff7f461f974ec4d
 
 
 [Cryptopia]
-Key =
-Secret = 
+Key = c9ce3575d8324dbbbfb0be1899cd19cf
+Secret = vODazm2sKp7nD4wqGb5/he63eV6yhKVeh4p/vVm+OHU=
 
 
 [Poloniex]
 Key = 
 Secret =
+
+[Binance]
+Key = xgbTmbcp4VNGPpwe6fp3wlp6NA0lLGBydSfvmUNOndKc1NBbLmSLsdTU6ueTYF6V
+Secret = ZKS9ZHhws8l6RtXyhY20NPRCXb3cjZDgXAXU2KWS8lV4iAd3UQU9XeQ48nB5M8sC
 
 
 [PriceLip]

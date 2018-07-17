@@ -35,3 +35,15 @@ def input_with_timeout(timeout=30.0):
         else:
             if time.time() > finishat:
                 return None
+
+def input_key_timeout(timeout=30.0):
+    finishat = time.time() + timeout
+    result = []
+    while True:
+        if msvcrt.kbhit():
+            result.append(msvcrt.getche())
+            return bytes.join(b'', result).decode('utf-8')
+            time.sleep(0.1)          # just to yield to other processes/threads
+        else:
+            if time.time() > finishat:
+                return None
